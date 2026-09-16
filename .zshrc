@@ -9,7 +9,8 @@ export ZSH="$HOME/.oh-my-zsh"
 # to know which specific one was loaded, run: echo $RANDOM_THEME
 # See https://github.com/ohmyzsh/ohmyzsh/wiki/Themes
 # ZSH_THEME="robbyrussell"
-ZSH_THEME="spaceship"
+source "/opt/homebrew/opt/spaceship/spaceship.zsh" # required to load spaceship from brew instead of the builtin theme below
+# ZSH_THEME="spaceship"
 
 # Set list of themes to pick from when loading at random
 # Setting this variable when ZSH_THEME=random will cause zsh to load
@@ -101,8 +102,7 @@ export EDITOR="micro"
 # For a full list of active aliases, run `alias`.
 
 # Import additional files
-dotspath="$HOME/Library/Mobile Documents/com~apple~CloudDocs/Dotfiles"
-source "$dotspath/ohmyzsh/aliases.zsh"
+dotspath="$HOME/Library/Mobile Documents/com~apple~CloudDocs/Dotfiles" # TODO: remove
 # source "$dotspath/ohmyzsh/config.zsh" # TODO: check
 
 # The following lines have been added by Docker Desktop to enable Docker CLI completions.
