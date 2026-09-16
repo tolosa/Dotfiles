@@ -1,0 +1,427 @@
+#!/bin/zsh
+# A single-file Stow browser. Requires GNU Stow, eza, and a Nerd Font terminal.
+emulate -R zsh
+setopt extendedglob no_beep
+
+typeset -r repo=${0:A:h}
+typeset target=$HOME
+
+usage() {
+  cat <<'EOF'
+Usage: stower [-t TARGET]
+
+Manage the Stow packages beside this script (target defaults to $HOME).
+Requires zsh, GNU Stow, eza, and a terminal with a Nerd Font.
+
+  Up/Down, j/k   Select a package; scroll files when the tree has focus
+  Tab            Switch focus between packages and the file tree
+  PageUp/Down    Scroll the file tree or command output
+  Left/Right     Scroll the file tree or command output horizontally
+  Home/End       Jump to the first/last item in the focused pane
+  s / Enter      Preview stow (install links)
+  u              Preview unstow (remove links)
+  r              Preview restow (refresh links)
+  g              Refresh packages and their status
+  q / Ctrl-C     Quit; Esc/q closes a preview
+
+Every action runs --simulate first. Only y on a successful preview applies
+the action; Enter, n, Esc, or q cancels. Failed previews cannot be applied.
+Visible top-level directories are packages; names starting with - are skipped
+because GNU Stow does not accept them. Stow's rc files and ignore rules apply.
+EOF
+}
+
+while (( $# )); do
+  case $1 in
+    -h|--help) usage; exit 0 ;;
+    -t|--target)
+      (( $# >= 2 )) || { print -u2 'stower: --target needs a directory'; exit 2; }
+      target=$2; shift 2 ;;
+    *) print -u2 -r -- "stower: unknown option: $1"; exit 2 ;;
+  esac
+done
+[[ -d $target ]] || { print -u2 -r -- "stower: target does not exist: $target"; exit 2; }
+target=${target:A}
+for dependency in stow eza stty; do
+  (( $+commands[$dependency] )) || {
+    print -u2 -r -- "stower: missing $dependency (install stow and eza with Homebrew)"
+    exit 1
+  }
+done
+[[ -t 0 && -t 1 && ${TERM:-dumb} != dumb ]] || {
+  print -u2 'stower: run this app in an interactive terminal'; exit 1
+}
+
+# Catppuccin Mocha: base, text, overlay, mauve, blue, green, yellow, red.
+typeset -r esc=$'\e' base=$'\e[48;2;30;30;46m' ink=$'\e[38;2;205;214;244m'
+typeset -r reset=$'\e[0;48;2;30;30;46;38;2;205;214;244m'
+typeset -r muted=$'\e[38;2;147;153;178m' mauve=$'\e[38;2;203;166;247m'
+typeset -r blue=$'\e[38;2;137;180;250m' green=$'\e[38;2;166;227;161m'
+typeset -r yellow=$'\e[38;2;249;226;175m' red=$'\e[38;2;243;139;168m'
+typeset -r selected_bg=$'\e[48;2;49;50;68m' bold=$'\e[1m'
+typeset -r tree_colors='reset:di=38;2;137;180;250:fi=38;2;205;214;244:ln=38;2;137;220;235:ex=38;2;166;227;161:or=38;2;243;139;168:xx=38;2;147;153;178'
+typeset -a packages tree_lines output_lines stow_command
+typeset -A states descriptions
+typeset screen key notice='Select a package to inspect its files.' focus=packages
+typeset saved_tty tree_package='' command_output REPLY
+integer selected=1 list_top=1 tree_top=0 tree_left=0 output_top=0 output_left=0
+integer rows=24 cols=80 line_no=1 list_height=1 tree_height=1 output_height=1
+integer active=0 resized=0 command_code=0 preview_ok=0
+
+# User-defined arithmetic functions keep viewport bounds readable.
+minimum() { (( $1 < $2 ? $1 : $2 )); }
+maximum() { (( $1 > $2 ? $1 : $2 )); }
+functions -M min 2 2 minimum
+functions -M max 2 2 maximum
+
+cleanup() {
+  if (( active )); then
+    printf '\e[0m\e[?7h\e[?25h\e[?1049l'
+    command stty "$saved_tty" 2>/dev/null
+    active=0
+  fi
+}
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+trap 'exit 129' HUP
+trap 'resized=1' WINCH
+
+# Keep raw output for decisions; escape terminal controls before displaying it.
+plain() {
+  REPLY=${1//$'\t'/  }
+  REPLY=${REPLY//[[:cntrl:]]/?}
+}
+
+run_stow() {
+  local action=$1 package=$2 simulation=$3
+  stow_command=(stow "--dir=$repo" "--target=$target" --dotfiles --verbose=1)
+  [[ $simulation == yes ]] && stow_command+=(--simulate)
+  stow_command+=("--$action" "$package")
+  # Stow loads the repository .stowrc from its working directory.
+  command_output=$(cd -- "$repo" && LC_ALL=C command "${stow_command[@]}" 2>&1)
+  command_code=$?
+}
+
+has_changes() {
+  [[ $1 == (#s)(LINK|UNLINK|MKDIR|RMDIR|MV):* ||
+     $1 == *$'\n'(LINK|UNLINK|MKDIR|RMDIR|MV):* ||
+     $1 == RMDIR\ * || $1 == *$'\n'RMDIR\ * ]]
+}
+
+refresh() {
+  local previous=${packages[$selected]:-} directory package install_output
+  integer install_code install_changes remove_changes i
+  packages=()
+  states=(); descriptions=()
+  for directory in "$repo"/*(N/); do
+    package=${directory:t}
+    [[ $package == -* ]] && continue
+    packages+=("$package")
+    run_stow stow "$package" yes
+    install_output=$command_output; install_code=$command_code
+    has_changes "$install_output"; install_changes=$(( ! $? ))
+    run_stow delete "$package" yes
+    has_changes "$command_output"; remove_changes=$(( ! $? ))
+    if (( install_code || command_code )); then
+      states[$package]=Conflict
+      descriptions[$package]='Stow reported a conflict or error; open an action to inspect it.'
+    elif (( install_changes && remove_changes )); then
+      states[$package]=Partial
+      descriptions[$package]='Some links are installed; stowing will create the missing links.'
+    elif (( install_changes )); then
+      states[$package]=Unstowed
+      descriptions[$package]='Ready to install into the target directory.'
+    elif (( remove_changes )); then
+      states[$package]=Stowed
+      descriptions[$package]='All managed entries are linked; no installation changes needed.'
+    else
+      states[$package]=Empty
+      descriptions[$package]='No managed changes found (empty, ignored, or deferred entries).'
+    fi
+  done
+  selected=1
+  if [[ -n $previous ]]; then
+    for (( i=1; i <= $#packages; i++ )); do
+      [[ ${packages[$i]} == "$previous" ]] && { selected=$i; break; }
+    done
+  fi
+  list_top=1; tree_package=''; tree_top=0; tree_left=0
+}
+
+load_tree() {
+  local package=${packages[$selected]:-} listing
+  [[ $package == "$tree_package" ]] && return
+  tree_package=$package; tree_top=0; tree_left=0; tree_lines=()
+  [[ -n $package ]] || return
+  listing=$(cd -- "$repo" && EZA_COLORS=$tree_colors command eza --tree --all \
+    --icons=always --color=always --group-directories-first -- "$package" 2>&1)
+  tree_lines=("${(@f)listing}")
+}
+
+dimensions() {
+  local size
+  size=$(command stty size 2>/dev/null)
+  local -a dimensions=( ${=size} )
+  rows=${dimensions[1]:-24}; cols=${dimensions[2]:-80}
+  (( rows > 0 )) || rows=24
+  (( cols > 0 )) || cols=80
+  list_height=$(( max(1, min($#packages, rows / 3 - 2)) ))
+  tree_height=$(( max(1, rows - list_height - 13) ))
+  output_height=$(( max(1, rows - 10) ))
+  resized=0
+}
+
+begin_frame() {
+  dimensions
+  screen="${reset}${esc}[H${esc}[2J"
+  line_no=1
+}
+
+row() {
+  screen+="${esc}[${line_no};1H${reset}  ${1}${reset}"
+  (( line_no++ ))
+}
+
+end_frame() {
+  printf '%s' "$screen"
+}
+
+state_style() {
+  case $1 in
+    Stowed) REPLY="${green}󰄬  Stowed" ;;
+    Unstowed) REPLY="${muted}󰝦  Unstowed" ;;
+    Partial) REPLY="${yellow}󰦖  Partial" ;;
+    Conflict) REPLY="${red}󰀦  Conflict" ;;
+    *) REPLY="${muted}󰇘  Empty" ;;
+  esac
+}
+
+# Preserve eza's SGR colors while cropping/scanning horizontally. Terminal
+# autowrap is disabled as a final guard for double-width filename characters.
+slice_line() {
+  local text=$1 chunk rendered='' sgr=$'^\e\\[[0-9;]*m'
+  integer skip=$2 width=$(( cols - 4 )) count=0
+  while [[ -n $text ]] && (( count < skip + width )); do
+    if [[ $text =~ $sgr ]]; then
+      chunk=$MATCH
+      rendered+="${chunk//$'\e[0m'/$reset}"
+      text=${text[$(( ${#chunk} + 1 )),-1]}
+    else
+      chunk=${text[1]}; text=${text[2,-1]}
+      [[ $chunk == [[:cntrl:]] ]] && chunk='?'
+      (( count >= skip )) && rendered+=$chunk
+      (( count++ ))
+    fi
+  done
+  REPLY=$rendered
+}
+
+draw_main() {
+  load_tree
+  begin_frame
+  row "${mauve}${bold}󰆧  stower${reset}  ${muted}dotfiles / package manager"
+  plain "$target"; row "${muted}󰉋  Target  ${ink}${REPLY}"
+  row ''
+  row "${blue}${bold}PACKAGES${reset}  ${muted}$#packages available  ·  ${focus} focused"
+  (( selected < list_top )) && list_top=$selected
+  (( selected >= list_top + list_height )) && list_top=$(( selected - list_height + 1 ))
+  local package name marker style
+  integer i
+  for (( i=list_top; i < list_top + list_height && i <= $#packages; i++ )); do
+    package=${packages[$i]}
+    plain "$package"; name=${REPLY[1,30]}
+    printf -v name '%-30s' "$name"
+    marker=' '; style=''
+    (( i == selected )) && { marker='›'; style=$selected_bg; }
+    state_style "${states[$package]}"
+    row "${style}${mauve}${marker}  ${ink}󰏗  ${name}  ${REPLY}"
+  done
+  if (( ! $#packages )); then
+    row "${yellow}No packages found beside this script."
+  fi
+  row ''
+  package=${packages[$selected]:-}
+  plain "$package"; row "${mauve}${bold}󰋼  ${REPLY:-No selection}${reset}  ${muted}package details"
+  plain "$repo/$package"; row "${muted}Source  ${ink}${REPLY}"
+  row "${muted}${descriptions[$package]:-Add a package directory, then press g.}"
+  tree_top=$(( max(0, min(tree_top, $#tree_lines - tree_height)) ))
+  row "${blue}󰙅  FILES${reset}  ${muted}$(( $#tree_lines ? tree_top + 1 : 0 ))–$(( min($#tree_lines, tree_top + tree_height) ))/$#tree_lines  ·  Tab focus · PgUp/PgDn · ←/→ pan"
+  for (( i=1; i <= tree_height; i++ )); do
+    slice_line "${tree_lines[$(( tree_top + i ))]:-}" "$tree_left"
+    row "$REPLY"
+  done
+  line_no=$(( rows - 2 ))
+  row "${muted}${notice}"
+  row "${mauve}↑/↓${ink} navigate   ${mauve}s/Enter${ink} stow   ${mauve}u${ink} unstow   ${mauve}r${ink} restow"
+  row "${mauve}Tab${ink} focus   ${mauve}g${ink} refresh   ${mauve}q${ink} quit"
+  end_frame
+}
+
+read_key() {
+  local char='' suffix=''
+  key=''
+  while ! read -r -u 0 -k 1 -t 1 char; do
+    # Explicit fd 0 avoids read -k's /dev/tty mode changes on macOS.
+    local size=$(command stty size 2>/dev/null)
+    if (( resized )) || [[ $size != "$rows $cols" ]]; then
+      key=resize
+      return
+    fi
+  done
+  if [[ $char == $'\e' ]]; then
+    while read -r -u 0 -k 1 -t 0.04 suffix; do
+      char+=$suffix
+      [[ $char == $'\e[' || $char == $'\eO' ]] && continue
+      [[ $suffix == [A-Za-z~] ]] && break
+      (( ${#char} >= 12 )) && break
+    done
+  fi
+  case $char in
+    $'\e[A'|$'\eOA') key=up ;;
+    $'\e[B'|$'\eOB') key=down ;;
+    $'\e[C'|$'\eOC') key=right ;;
+    $'\e[D'|$'\eOD') key=left ;;
+    $'\e[5~') key=pageup ;;
+    $'\e[6~') key=pagedown ;;
+    $'\e[H'|$'\eOH'|$'\e[1~'|$'\e[7~') key=home ;;
+    $'\e[F'|$'\eOF'|$'\e[4~'|$'\e[8~') key=end ;;
+    $'\r'|$'\n') key=enter ;;
+    $'\t') key=tab ;;
+    $'\e') key=escape ;;
+    $'\x03') exit 130 ;;
+    *) key=$char ;;
+  esac
+}
+
+small_terminal() {
+  (( cols < 64 || rows < 20 )) || return 1
+  screen="${reset}${esc}[H${esc}[2J"
+  line_no=1
+  row "${yellow}stower needs at least 64 columns × 20 rows."
+  row "${muted}Resize the terminal, or press q to quit."
+  end_frame
+  return 0
+}
+
+show_action() {
+  local action=$1 package=${packages[$selected]} mode=preview title command_text entry
+  integer i
+  notice="Simulating $action…"; draw_main
+  run_stow "$action" "$package" yes
+  preview_ok=$(( command_code == 0 ))
+  command_text="${(j: :)${(q)stow_command}}"
+  output_lines=("${(@f)command_output}")
+  if (( preview_ok )) && ! has_changes "$command_output"; then
+    output_lines=('No changes are needed.' "${output_lines[@]}")
+  fi
+  output_top=0; output_left=0
+  while true; do
+    begin_frame
+    if ! small_terminal; then
+      plain "$package"; title=$REPLY
+      row "${mauve}${bold}󰑐  ${action} / ${title}${reset}  ${muted}${mode}"
+      plain "$target"; row "${muted}Target  ${ink}${REPLY}"
+      plain "$command_text"; slice_line "$REPLY" "$output_left"; row "${muted}${REPLY}"
+      row ''
+      if [[ $mode == result ]]; then
+        (( command_code == 0 )) && row "${green}󰄬  Command completed." || row "${red}󰀦  Command failed (exit $command_code)."
+      elif (( preview_ok )); then
+        row "${green}󰄬  Simulation passed. Review the changes below."
+      else
+        row "${red}󰀦  Simulation failed (exit $command_code); apply is disabled."
+      fi
+      output_top=$(( max(0, min(output_top, $#output_lines - output_height)) ))
+      row "${muted}Lines $(( output_top + 1 ))–$(( min($#output_lines, output_top + output_height) ))/$#output_lines  ·  ↑/↓ scroll · ←/→ pan"
+      for (( i=1; i <= output_height; i++ )); do
+        plain "${output_lines[$(( output_top + i ))]:-}"
+        entry=$REPLY
+        slice_line "$entry" "$output_left"
+        case $entry in
+          LINK:*|MKDIR:*) row "${green}${REPLY}" ;;
+          UNLINK:*|RMDIR:*) row "${yellow}${REPLY}" ;;
+          *CONFLICT*|*ERROR*|*WARNING*) row "${yellow}${REPLY}" ;;
+          *) row "$REPLY" ;;
+        esac
+      done
+      line_no=$(( rows - 2 ))
+      row "${muted}PgUp/PgDn scroll a page · Home/End jump"
+      if [[ $mode == preview ]] && (( preview_ok )); then
+        row "${green}y${ink} apply these changes   ${mauve}Enter/n/Esc/q${ink} cancel"
+      else
+        row "${mauve}Enter/Esc/q${ink} back to packages"
+      fi
+      end_frame
+    fi
+    read_key
+    case $key in
+      escape|q|n|enter) notice='Returned to packages.'; break ;;
+      up|k) (( output_top=max(0, output_top - 1) )) ;;
+      down|j) (( output_top++ )) ;;
+      pageup) (( output_top=max(0, output_top - output_height) )) ;;
+      pagedown) (( output_top+=output_height )) ;;
+      home) output_top=0; output_left=0 ;;
+      end) output_top=$#output_lines ;;
+      left) (( output_left=max(0, output_left - 8) )) ;;
+      right) (( output_left+=8 )) ;;
+      y)
+        if [[ $mode == preview ]] && (( preview_ok && cols >= 64 && rows >= 20 )); then
+          run_stow "$action" "$package" no
+          command_text="${(j: :)${(q)stow_command}}"
+          output_lines=("${(@f)command_output}")
+          (( $#output_lines )) || output_lines=('No changes were needed.')
+          mode=result; output_top=0; output_left=0
+        fi ;;
+    esac
+  done
+  [[ $mode == result ]] && refresh
+}
+
+saved_tty=$(command stty -g) || exit 1
+active=1
+printf '\e[?1049h\e[?25l\e[?7l'
+# Read Ctrl-C ourselves; Ctrl-Z cannot suspend the app with the terminal raw.
+command stty -echo -icanon -isig -ixon min 1 time 0 || exit 1
+begin_frame; row "${mauve}󰑐  Inspecting packages…"; end_frame
+refresh
+while true; do
+  dimensions
+  if ! small_terminal; then
+    draw_main
+  fi
+  read_key
+  [[ $key == q ]] && break
+  (( cols < 64 || rows < 20 )) && continue
+  case $key in
+    tab) [[ $focus == packages ]] && focus=files || focus=packages ;;
+    up|k)
+      if [[ $focus == files ]]; then
+        (( tree_top=max(0, tree_top - 1) ))
+      else
+        (( selected=max(1, selected - 1) ))
+      fi ;;
+    down|j)
+      if [[ $focus == files ]]; then
+        (( tree_top++ ))
+      else
+        (( selected=max(1, min($#packages, selected + 1)) ))
+      fi ;;
+    home)
+      [[ $focus == files ]] && { tree_top=0; tree_left=0; } || selected=1 ;;
+    end)
+      [[ $focus == files ]] && tree_top=$#tree_lines || selected=$#packages ;;
+    pageup) (( tree_top=max(0, tree_top - tree_height) )) ;;
+    pagedown) (( tree_top+=tree_height )) ;;
+    left) (( tree_left=max(0, tree_left - 8) )) ;;
+    right) (( tree_left+=8 )) ;;
+    g) notice='Package status refreshed.'; refresh ;;
+    s|enter|u|r)
+      if (( $#packages )); then
+        case $key in
+          s|enter) show_action stow ;;
+          u) show_action delete ;;
+          r) show_action restow ;;
+        esac
+      fi ;;
+  esac
+done
