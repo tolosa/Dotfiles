@@ -1,0 +1,26 @@
+macos-titlebar-style = hidden
+window-padding-x = 15
+window-padding-y = 15,5
+theme = Atom One Dark
+background = #181C23
+background-image = /Users/leo/Library/Mobile Documents/com~apple~CloudDocs/Dotfiles/images/logo.png
+background-image-opacity = 0.12
+background-image-position = bottom-right
+background-image-fit = none
+window-show-tab-bar = auto
+macos-icon = custom
+macos-window-buttons = hidden
+working-directory = home
+window-inherit-working-directory = false
+
+font-thicken=true
+font-thicken-strength=1
+#adjust-cell-height=1
+scrollback-limit = 8000000
+image-storage-limit = 80000000
+cursor-style = block
+cursor-style-blink = false
+shell-integration-features = no-cursor
+
+# macOS-style undo for the current Zsh command line
+keybind = cmd+z=text:\x1f
