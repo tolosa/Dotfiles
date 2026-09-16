@@ -13,11 +13,8 @@ Usage: stower [-t TARGET]
 Manage the Stow packages beside this script (target defaults to $HOME).
 Requires zsh, GNU Stow, eza, and a terminal with a Nerd Font.
 
-  Up/Down, j/k   Select a package; scroll files when the tree has focus
-  Tab            Switch focus between packages and the file tree
-  PageUp/Down    Scroll the file tree or command output
-  Left/Right     Scroll command output horizontally
-  Home/End       Jump to the first/last item in the focused pane
+  Up/Down, j/k   Select a package
+  Home/End       Select the first/last package
   s / Enter      Preview stow (install links)
   u              Preview unstow (remove links)
   r              Preview restow (refresh links)
@@ -26,6 +23,7 @@ Requires zsh, GNU Stow, eza, and a terminal with a Nerd Font.
 
 Every action runs --simulate first. Only y on a successful preview applies
 the action; Enter, n, Esc, or q cancels. Failed previews cannot be applied.
+File lists and command output are clipped to the screen without scrolling.
 Visible top-level directories are packages; names starting with - are skipped
 because GNU Stow does not accept them. Stow's rc files and ignore rules apply.
 EOF
@@ -62,10 +60,10 @@ typeset -r bold=$'\e[1m'
 typeset -r tree_colors='reset:di=38;2;137;180;250:fi=38;2;205;214;244:ln=38;2;137;220;235:ex=38;2;166;227;161:or=38;2;243;139;168:xx=38;2;147;153;178'
 typeset -a packages tree_lines output_lines stow_command
 typeset -A states descriptions
-typeset screen key notice='Select a package to inspect its files.' focus=packages
+typeset screen key notice='Select a package to inspect its files.'
 typeset saved_tty tree_package='' command_output REPLY
-integer selected=1 list_top=1 tree_top=0 output_top=0 output_left=0
-integer rows=24 cols=80 line_no=1 list_height=1 tree_height=1 output_height=1
+integer selected=1 list_top=1
+integer rows=24 cols=80 line_no=1 list_height=1 tree_height=1
 integer active=0 resized=0 command_code=0 preview_ok=0
 
 # User-defined arithmetic functions keep viewport bounds readable.
@@ -76,7 +74,7 @@ functions -M max 2 2 maximum
 
 cleanup() {
   if (( active )); then
-    printf '\e[0m\e[?7h\e[?25h\e[?1049l'
+    printf '\e[0m\e[?7h\e[?25h\e[?1049l\e[?1007r'
     command stty "$saved_tty" 2>/dev/null
     active=0
   fi
@@ -146,13 +144,13 @@ refresh() {
       [[ ${packages[$i]} == "$previous" ]] && { selected=$i; break; }
     done
   fi
-  list_top=1; tree_package=''; tree_top=0
+  list_top=1; tree_package=''
 }
 
 load_tree() {
   local package=${packages[$selected]:-} listing
   [[ $package == "$tree_package" ]] && return
-  tree_package=$package; tree_top=0; tree_lines=()
+  tree_package=$package; tree_lines=()
   [[ -n $package ]] || return
   listing=$(cd -- "$repo" && EZA_COLORS=$tree_colors command eza --tree --all \
     --icons=always --color=always --group-directories-first -- "$package" 2>&1)
@@ -168,7 +166,6 @@ dimensions() {
   (( cols > 0 )) || cols=80
   list_height=$(( max(1, min($#packages, rows / 3 - 2)) ))
   tree_height=$(( max(1, rows - list_height - 14) ))
-  output_height=$(( max(1, rows - 10) ))
   resized=0
 }
 
@@ -197,12 +194,12 @@ state_style() {
   esac
 }
 
-# Preserve eza's SGR colors while cropping/scanning horizontally. Terminal
+# Preserve eza's SGR colors while clipping lines to the screen width. Terminal
 # autowrap is disabled as a final guard for double-width filename characters.
-slice_line() {
+clip_line() {
   local text=$1 chunk rendered='' sgr=$'^\e\\[[0-9;]*m'
-  integer skip=$2 width=$(( cols - 4 )) count=0
-  while [[ -n $text ]] && (( count < skip + width )); do
+  integer width=$(( cols - 4 )) count=0
+  while [[ -n $text ]] && (( count < width )); do
     if [[ $text =~ $sgr ]]; then
       chunk=$MATCH
       rendered+="${chunk//$'\e[0m'/$reset}"
@@ -210,7 +207,7 @@ slice_line() {
     else
       chunk=${text[1]}; text=${text[2,-1]}
       [[ $chunk == [[:cntrl:]] ]] && chunk='?'
-      (( count >= skip )) && rendered+=$chunk
+      rendered+=$chunk
       (( count++ ))
     fi
   done
@@ -223,7 +220,7 @@ draw_main() {
   row "${mauve}${bold}󰆧  stower${reset}  ${muted}dotfiles / package manager"
   plain "$target"; row "${muted}󰉋  Target  ${ink}${REPLY}"
   row ''
-  row "${blue}${bold}PACKAGES${reset}  ${muted}$#packages available  ·  ${focus} focused"
+  row "${blue}${bold}PACKAGES${reset}  ${muted}$#packages available"
   (( selected < list_top )) && list_top=$selected
   (( selected >= list_top + list_height )) && list_top=$(( selected - list_height + 1 ))
   local package name marker style
@@ -246,16 +243,15 @@ draw_main() {
   plain "$repo/$package"; row "${muted}Source  ${ink}${REPLY}"
   row "${muted}${descriptions[$package]:-Add a package directory, then press g.}"
   row ''
-  tree_top=$(( max(0, min(tree_top, $#tree_lines - tree_height)) ))
-  row "${blue}󰙅  FILES${reset}  ${muted}$(( $#tree_lines ? tree_top + 1 : 0 ))–$(( min($#tree_lines, tree_top + tree_height) ))/$#tree_lines  ·  Tab focus · PgUp/PgDn"
+  row "${blue}󰙅  FILES${reset}"
   for (( i=1; i <= tree_height; i++ )); do
-    slice_line "${tree_lines[$(( tree_top + i ))]:-}" 0
+    clip_line "${tree_lines[$i]:-}"
     row "$REPLY"
   done
   line_no=$(( rows - 2 ))
   row "${muted}${notice}"
   row "${mauve}↑/↓${ink} navigate   ${mauve}s/Enter${ink} stow   ${mauve}u${ink} unstow   ${mauve}r${ink} restow"
-  row "${mauve}Tab${ink} focus   ${mauve}g${ink} refresh   ${mauve}q${ink} quit"
+  row "${mauve}g${ink} refresh   ${mauve}q${ink} quit"
   end_frame
 }
 
@@ -281,14 +277,9 @@ read_key() {
   case $char in
     $'\e[A'|$'\eOA') key=up ;;
     $'\e[B'|$'\eOB') key=down ;;
-    $'\e[C'|$'\eOC') key=right ;;
-    $'\e[D'|$'\eOD') key=left ;;
-    $'\e[5~') key=pageup ;;
-    $'\e[6~') key=pagedown ;;
     $'\e[H'|$'\eOH'|$'\e[1~'|$'\e[7~') key=home ;;
     $'\e[F'|$'\eOF'|$'\e[4~'|$'\e[8~') key=end ;;
     $'\r'|$'\n') key=enter ;;
-    $'\t') key=tab ;;
     $'\e') key=escape ;;
     $'\x03') exit 130 ;;
     *) key=$char ;;
@@ -307,20 +298,18 @@ small_terminal() {
 
 show_action() {
   local action=$1 package=${packages[$selected]} mode=preview title command_text entry
-  integer i
   notice="Simulating $action…"; draw_main
   run_stow "$action" "$package" yes
   preview_ok=$(( command_code == 0 ))
   command_text="${(j: :)${(q)stow_command}}"
   output_lines=("${(@f)command_output}")
-  output_top=0; output_left=0
   while true; do
     begin_frame
     if ! small_terminal; then
       plain "$package"; title=$REPLY
       row "${mauve}${bold}󰑐  ${action} / ${title}${reset}  ${muted}${mode}"
       plain "$target"; row "${muted}Target  ${ink}${REPLY}"
-      plain "$command_text"; slice_line "$REPLY" "$output_left"; row "${muted}${REPLY}"
+      plain "$command_text"; clip_line "$REPLY"; row "${muted}${REPLY}"
       row ''
       if [[ $mode == result ]]; then
         (( command_code == 0 )) && row "${green}󰄬  Command completed." || row "${red}󰀦  Command failed (exit $command_code)."
@@ -329,12 +318,16 @@ show_action() {
       else
         row "${red}󰀦  Simulation failed (exit $command_code); apply is disabled."
       fi
-      output_top=$(( max(0, min(output_top, $#output_lines - output_height)) ))
-      row "${muted}Lines $(( output_top + 1 ))–$(( min($#output_lines, output_top + output_height) ))/$#output_lines  ·  ↑/↓ scroll · ←/→ pan"
-      for (( i=1; i <= output_height; i++ )); do
-        plain "${output_lines[$(( output_top + i ))]:-}"
+      row ''
+      for entry in "${output_lines[@]}"; do
+        if [[ $entry == WARNING:* ]]; then
+          (( line_no + 1 < rows - 2 )) || break
+          row ''
+        fi
+        (( line_no < rows - 2 )) || break
+        plain "$entry"
         entry=$REPLY
-        slice_line "$entry" "$output_left"
+        clip_line "$entry"
         case $entry in
           LINK:*|MKDIR:*) row "${green}${REPLY}" ;;
           UNLINK:*|RMDIR:*) row "${yellow}${REPLY}" ;;
@@ -342,8 +335,7 @@ show_action() {
           *) row "$REPLY" ;;
         esac
       done
-      line_no=$(( rows - 2 ))
-      row "${muted}PgUp/PgDn scroll a page · Home/End jump"
+      line_no=$(( rows - 1 ))
       if [[ $mode == preview ]] && (( preview_ok )); then
         row "${green}y${ink} apply these changes   ${mauve}Enter/n/Esc/q${ink} cancel"
       else
@@ -354,21 +346,13 @@ show_action() {
     read_key
     case $key in
       escape|q|n|enter) notice='Returned to packages.'; break ;;
-      up|k) (( output_top=max(0, output_top - 1) )) ;;
-      down|j) (( output_top++ )) ;;
-      pageup) (( output_top=max(0, output_top - output_height) )) ;;
-      pagedown) (( output_top+=output_height )) ;;
-      home) output_top=0; output_left=0 ;;
-      end) output_top=$#output_lines ;;
-      left) (( output_left=max(0, output_left - 8) )) ;;
-      right) (( output_left+=8 )) ;;
       y)
         if [[ $mode == preview ]] && (( preview_ok && cols >= 64 && rows >= 20 )); then
           run_stow "$action" "$package" no
           command_text="${(j: :)${(q)stow_command}}"
           output_lines=("${(@f)command_output}")
           (( $#output_lines )) || output_lines=('No changes were needed.')
-          mode=result; output_top=0; output_left=0
+          mode=result
         fi ;;
     esac
   done
@@ -377,7 +361,8 @@ show_action() {
 
 saved_tty=$(command stty -g) || exit 1
 active=1
-printf '\e[?1049h\e[?25l\e[?7l'
+# Save and disable wheel-to-arrow translation for the alternate screen.
+printf '\e[?1007s\e[?1007l\e[?1049h\e[?25l\e[?7l'
 # Read Ctrl-C ourselves; Ctrl-Z cannot suspend the app with the terminal raw.
 command stty -echo -icanon -isig -ixon min 1 time 0 || exit 1
 begin_frame; row "${mauve}󰑐  Inspecting packages…"; end_frame
@@ -391,25 +376,10 @@ while true; do
   [[ $key == q ]] && break
   (( cols < 64 || rows < 20 )) && continue
   case $key in
-    tab) [[ $focus == packages ]] && focus=files || focus=packages ;;
-    up|k)
-      if [[ $focus == files ]]; then
-        (( tree_top=max(0, tree_top - 1) ))
-      else
-        (( selected=max(1, selected - 1) ))
-      fi ;;
-    down|j)
-      if [[ $focus == files ]]; then
-        (( tree_top++ ))
-      else
-        (( selected=max(1, min($#packages, selected + 1)) ))
-      fi ;;
-    home)
-      [[ $focus == files ]] && tree_top=0 || selected=1 ;;
-    end)
-      [[ $focus == files ]] && tree_top=$#tree_lines || selected=$#packages ;;
-    pageup) (( tree_top=max(0, tree_top - tree_height) )) ;;
-    pagedown) (( tree_top+=tree_height )) ;;
+    up|k) (( selected=max(1, selected - 1) )) ;;
+    down|j) (( selected=max(1, min($#packages, selected + 1)) )) ;;
+    home) selected=1 ;;
+    end) selected=$#packages ;;
     g) notice='Package status refreshed.'; refresh ;;
     s|enter|u|r)
       if (( $#packages )); then
