@@ -1,0 +1,25 @@
+# Dependencies and local pnpm store
+node_modules/
+.pnpm-store/
+
+# Build output and generated development fixtures
+dist/
+dev/generated/
+*.tsbuildinfo
+
+# Test output
+test-results/
+playwright-report/
+blob-report/
+coverage/
+
+# Local environment configuration (keep examples versioned)
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Logs and operating system files
+*.log
+.DS_Store
+Thumbs.db
