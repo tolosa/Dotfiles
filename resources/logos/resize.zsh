@@ -1,13 +1,13 @@
 #!/bin/zsh
-# Resize a PNG while preserving its aspect ratio, then add transparent margins.
+# Resize PNGs in a folder while preserving aspect ratios, then add transparent margins.
 emulate -R zsh
 setopt errexit nounset pipefail
 
 usage() {
   cat <<'EOF'
-Usage: resize.zsh INPUT.png -o OUTPUT.png [options]
+Usage: resize.zsh SOURCE_DIR -o OUTPUT_DIR [options]
 
-  -o, --output FILE       Target PNG filename (required)
+  -o, --output DIR        Target folder (required; created if missing)
   -w, --width PIXELS      Maximum image width before margins
   -h, --height PIXELS     Maximum image height before margins
   -m, --margin PIXELS     Transparent margin on all sides (default: 0)
@@ -18,7 +18,7 @@ Usage: resize.zsh INPUT.png -o OUTPUT.png [options]
   -f, --overwrite         Replace an existing target (otherwise skip)
       --help              Show this help
       --                  End options (for input names starting with '-');
-                          put any remaining input filename after this
+                          put the source folder after this
 
 Dimensions and margins are whole pixels. Dimensions must be positive;
 margins may be zero. With both dimensions, the image fits inside that box
@@ -26,12 +26,15 @@ without cropping or stretching. With one dimension, the other scales
 proportionally. Upscaling is allowed. Without dimensions, keep the image size.
 Margins are added AFTER resizing, increasing the final output dimensions.
 Per-side margins override --margin regardless of option order.
-The output directory must already exist. Relative paths use the current directory.
+Process all PNG files directly in the source folder (including .PNG and hidden
+files), keeping their filenames. Subfolders and non-PNG files are ignored.
+Existing target files are skipped unless --overwrite is passed.
+Relative paths use the current directory.
 
 Examples:
-  resize.zsh logo.png -o small.png --width 256
-  resize.zsh logo.png -o padded.png -w 256 -h 256 --margin 16
-  resize.zsh logo.png -o padded.png -w 256 -m 16 --margin-bottom 32 -f
+  resize.zsh source -o small --width 256
+  resize.zsh source -o padded -w 256 -h 256 --margin 16
+  resize.zsh source -o padded -w 256 -m 16 --margin-bottom 32 -f
 EOF
 }
 
@@ -56,7 +59,7 @@ while (( $# )); do
     --help) usage; exit 0 ;;
     -f|--overwrite) overwrite=1; shift ;;
     -o|--output)
-      (( $# >= 2 )) || fail "$1 requires a filename"
+      (( $# >= 2 )) || fail "$1 requires a folder"
       output=$2
       shift 2
       ;;
@@ -83,13 +86,13 @@ while (( $# )); do
     --)
       shift
       (( $# == 0 )) && break
-      [[ -z $input && $# == 1 ]] || fail 'Expected exactly one input PNG'
+      [[ -z $input && $# == 1 ]] || fail 'Expected exactly one source folder'
       input=$1
       shift
       ;;
     -*) fail "Unknown option: $1 (see --help)" ;;
     *)
-      [[ -z $input ]] || fail 'Expected exactly one input PNG'
+      [[ -z $input ]] || fail 'Expected exactly one source folder'
       input=$1
       shift
       ;;
@@ -97,32 +100,41 @@ while (( $# )); do
 done
 
 [[ -n $input && -n $output ]] || { usage >&2; exit 1; }
-[[ ${output:e:l} == png ]] || fail 'Output filename must end in .png'
 input=${input:a}
 output=${output:a}
-[[ ! -d $output ]] || fail "Output is a directory: $output"
-if [[ -e $output || -L $output ]] && (( ! overwrite )); then
-  print -r -- "Skipped existing target: $output"
-  exit 0
-fi
-[[ -f $input && -r $input ]] || fail "Cannot read input: $input"
-[[ -d ${output:h} ]] || fail "Output directory does not exist: ${output:h}"
+[[ -d $input && -r $input && -x $input ]] || fail "Cannot read source folder: $input"
 (( $+commands[magick] )) || fail 'ImageMagick is required; install it with: brew install imagemagick'
+mkdir -p -- "$output"
 
 top=${top:-$margin}
 right=${right:-$margin}
 bottom=${bottom:-$margin}
 left=${left:-$margin}
-typeset -a resize_args
+typeset -a resize_args images
 resize_args=()
 if [[ -n $width || -n $height ]]; then
   resize_args=(-resize "${width}x${height}")
 fi
 
-# Reading from stdin also handles filenames with ImageMagick special characters.
-magick PNG:- "${resize_args[@]}" +repage -alpha set -background none \
-  -gravity northwest -splice "${left}x${top}" \
-  -gravity southeast -splice "${right}x${bottom}" \
-  +repage "PNG:$output" < "$input"
+images=("$input"/*.[pP][nN][gG](ND.))
+if (( $#images == 0 )); then
+  print -r -- "No PNG images found in: $input"
+  exit 0
+fi
 
-print -r -- "Created: $output"
+for file in "${images[@]}"; do
+  target="$output/${file:t}"
+  if [[ -e $target || -L $target ]] && (( ! overwrite )); then
+    print -r -- "Skipped existing target: $target"
+    continue
+  fi
+  [[ ! -d $target ]] || fail "Target is a directory: $target"
+
+  # Reading from stdin also handles filenames with ImageMagick special characters.
+  magick PNG:- "${resize_args[@]}" +repage -alpha set -background none \
+    -gravity northwest -splice "${left}x${top}" \
+    -gravity southeast -splice "${right}x${bottom}" \
+    +repage "PNG:$target" < "$file"
+
+  print -r -- "Created: $target"
+done
