@@ -24,8 +24,9 @@ Requires zsh, GNU Stow, eza, and a terminal with a Nerd Font.
 Every action runs --simulate first. Only y on a successful preview applies
 the action; Enter, n, Esc, or q cancels. Failed previews cannot be applied.
 File lists and command output are clipped to the screen without scrolling.
-Visible top-level directories are packages; names starting with - are skipped
-because GNU Stow does not accept them. Stow's rc files and ignore rules apply.
+Visible top-level directories are packages, except resources; names starting
+with - are skipped because GNU Stow does not accept them. Stow's rc files and
+ignore rules apply to package contents.
 EOF
 }
 
@@ -114,7 +115,7 @@ refresh() {
   states=(); descriptions=()
   for directory in "$repo"/*(N/); do
     package=${directory:t}
-    [[ $package == -* ]] && continue
+    [[ $package == -* || $package == resources ]] && continue
     packages+=("$package")
     run_stow stow "$package" yes
     install_output=$command_output; install_code=$command_code
