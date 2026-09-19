@@ -1,11 +1,11 @@
 #!/bin/zsh
-# macOS: rename recursively by birth time, preserving folders and extensions.
+# macOS: rename source files recursively by birth time, preserving folders and extensions.
 # Usage: zsh resources/logos/rename.zsh [--dry-run]
 # Sequence numbers start at 001 for each date across the whole tree.
 emulate -R zsh
 setopt errexit nounset pipefail
 
-root=${0:A:h}
+root=${0:A:h}/source
 dry_run=0
 case ${1:-} in
   --dry-run) dry_run=1 ;;
