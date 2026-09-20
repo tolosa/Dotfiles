@@ -124,16 +124,15 @@ source "$HOMEBREW_PREFIX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.z
 
 # fastfetch
 # https://github.com/fastfetch-cli/fastfetch
-
 if [[ -o interactive ]]; then
-  background=$(readlink "$HOME/.config/ghostty/background.png")
+  background=$(readlink "$XDG_CONFIG_HOME/ghostty/background.png")
   if [[ -n "$background" ]]; then
-    fastfetch --kitty "$HOME/.config/fastfetch/logos/${background:t}"
+    fastfetch --kitty "$XDG_CONFIG_HOME/fastfetch/logos/${background:t}"
   fi
 
   (
     images=()
-    for image in "$HOME"/.config/ghostty/backgrounds/*.png(N.); do
+    for image in "$XDG_CONFIG_HOME"/ghostty/backgrounds/*.png(N.); do
       if [[ "${image:t}" != "${background:t}" ]]; then
         images+=("$image")
       fi
@@ -141,7 +140,7 @@ if [[ -o interactive ]]; then
 
     if (( ${#images[@]} )); then
       background=${images[$((RANDOM % ${#images[@]} + 1))]}
-      ln -sfn "$background" "$HOME/.config/ghostty/background.png"
+      ln -sfn "$background" "$XDG_CONFIG_HOME/ghostty/background.png"
     fi
   ) &!
 fi
