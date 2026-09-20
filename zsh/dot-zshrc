@@ -101,8 +101,6 @@ export EDITOR="micro"
 # - $ZSH_CUSTOM/macos.zsh
 # For a full list of active aliases, run `alias`.
 
-# Import additional files
-dotspath="$HOME/Library/Mobile Documents/com~apple~CloudDocs/Dotfiles" # TODO: remove
 # source "$dotspath/ohmyzsh/config.zsh" # TODO: check
 
 # The following lines have been added by Docker Desktop to enable Docker CLI completions.
@@ -127,13 +125,23 @@ source "$HOMEBREW_PREFIX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.z
 # fastfetch
 # https://github.com/fastfetch-cli/fastfetch
 
-if [[ -o interactive && -z "$FASTFETCH_SHOWN" ]]; then
-  export FASTFETCH_SHOWN=1
-  fastfetch --kitty "$dotspath"/images/logo.png
-fi
+if [[ -o interactive ]]; then
+  background=$(readlink "$HOME/.config/ghostty/background.png")
+  if [[ -n "$background" ]]; then
+    fastfetch --kitty "$HOME/.config/fastfetch/logos/${background:t}"
+  fi
 
-(
-  images=("$dotspath"/images/logos/*.png(N.))
-  logo=${images[$((RANDOM % ${#images[@]} + 1))]}
-  ln -sfn "$logo" "$dotspath"/images/logo.png
-) &!
+  (
+    images=()
+    for image in "$HOME"/.config/ghostty/backgrounds/*.png(N.); do
+      if [[ "${image:t}" != "${background:t}" ]]; then
+        images+=("$image")
+      fi
+    done
+
+    if (( ${#images[@]} )); then
+      background=${images[$((RANDOM % ${#images[@]} + 1))]}
+      ln -sfn "$background" "$HOME/.config/ghostty/background.png"
+    fi
+  ) &!
+fi
