@@ -115,6 +115,11 @@ export EZA_COLORS="da=3;38;2;96;123;174" # just grey, 3:2
 zstyle ':completion:*' list-separator '→'
 source "$HOMEBREW_PREFIX/opt/fzf-tab/share/fzf-tab/fzf-tab.zsh"
 
+# bat
+# https://github.com/sharkdp/bat
+export BAT_THEME="Catppuccin Mocha"
+export BAT_STYLE="default,-grid,+header-filesize,+rule"
+
 # zsh-syntax-highlighting
 # https://github.com/zsh-users/zsh-syntax-highlighting
 source "$HOMEBREW_PREFIX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
