@@ -4,7 +4,7 @@ alias ezsh="code ~/.zshrc"
 alias ealias="code ~/Library/Mobile\ Documents/com\~apple\~CloudDocs/Dotfiles/ohmyzsh/aliases.zsh"
 alias econfig="code ~/Library/Mobile\ Documents/com\~apple\~CloudDocs/Dotfiles/ohmyzsh/config.zsh"
 # ls
-alias l="eza -lF --icons --no-quotes --no-permissions --git --group-directories-first --time-style=relative"
+alias l="eza -lF --icons --no-quotes --no-permissions --git --group-directories-first --time-style=relative --color-scale=age"
 alias la="l -a"
 alias lz="l --total-size"
 alias laz="la --total-size"

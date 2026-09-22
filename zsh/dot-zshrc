@@ -76,6 +76,9 @@ plugins=(z aliases fzf macos extract colored-man-pages copypath copyfile copybuf
 
 # zstyle ':omz:plugins:docker' aliases no
 
+# Add Docker CLI completions before Oh My Zsh initializes completion.
+fpath=("$HOME/.docker/completions" $fpath)
+
 source $ZSH/oh-my-zsh.sh
 
 # User configuration
@@ -103,15 +106,9 @@ export EDITOR="micro"
 
 # source "$dotspath/ohmyzsh/config.zsh" # TODO: check
 
-# The following lines have been added by Docker Desktop to enable Docker CLI completions.
-fpath=(/Users/leo/.docker/completions $fpath)
-autoload -Uz compinit
-compinit
-# End of Docker CLI completions
-
 # eza
 # https://eza.rocks
-export EZA_COLORS="da=3;2"
+export EZA_COLORS="da=3;38;2;96;123;174" # just grey, 3:2
 
 # fzf-tab
 # https://github.com/aloxaf/fzf-tab#oh-my-zsh
