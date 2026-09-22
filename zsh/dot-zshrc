@@ -112,8 +112,8 @@ export EZA_COLORS="da=3;38;2;96;123;174" # just grey, 3:2
 
 # fzf-tab
 # https://github.com/aloxaf/fzf-tab#oh-my-zsh
-zstyle ':completion:*' list-separator '→'
 source "$HOMEBREW_PREFIX/opt/fzf-tab/share/fzf-tab/fzf-tab.zsh"
+zstyle ':completion:*' list-separator '→'
 
 # zsh-syntax-highlighting
 # https://github.com/zsh-users/zsh-syntax-highlighting
