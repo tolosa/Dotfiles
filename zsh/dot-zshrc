@@ -119,6 +119,9 @@ source "$HOMEBREW_PREFIX/opt/fzf-tab/share/fzf-tab/fzf-tab.zsh"
 # https://github.com/sharkdp/bat
 export BAT_THEME="Catppuccin Mocha"
 export BAT_STYLE="default,-grid,+header-filesize,+rule"
+export BAT_OPTS="\
+  --italic-text=always \
+  --tabs=2"
 
 # zsh-syntax-highlighting
 # https://github.com/zsh-users/zsh-syntax-highlighting
