@@ -114,6 +114,26 @@ export EZA_COLORS="da=3;38;2;96;123;174" # just grey, 3:2
 # https://github.com/aloxaf/fzf-tab#oh-my-zsh
 source "$HOMEBREW_PREFIX/opt/fzf-tab/share/fzf-tab/fzf-tab.zsh"
 zstyle ':completion:*' list-separator '→'
+# Preserve LS_COLORS/EZA_COLORS-style file coloring
+zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
+# Enable eza directory previews
+#zstyle ':fzf-tab:complete:cd:*' fzf-preview \
+#  'eza -la --color=always --icons=always --group-directories-first "$realpath"'
+zstyle ':fzf-tab:*' fzf-flags \
+  --color=bg:-1,bg+:#313244 \
+  --color=fg:#bac2de,fg+:#cdd6f4 \
+  --color=hl:#7f849c,hl+:#89b4fa \
+  --color=border:#45475a \
+  --color=prompt:#9399b2 \
+  --color=pointer:#89b4fa \
+  --color=marker:#a6e3a1 \
+  --color=spinner:#7f849c \
+  --color=info:#6c7086 \
+  --color=header:#7f849c
+zstyle ':completion:*:descriptions' format '%d'
+zstyle ':completion:*' group-name ''
+zstyle ':fzf-tab:*' switch-group 'left' 'right'
+zstyle ':completion:*' menu no
 
 # zsh-syntax-highlighting
 # https://github.com/zsh-users/zsh-syntax-highlighting
