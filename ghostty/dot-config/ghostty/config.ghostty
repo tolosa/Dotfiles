@@ -15,6 +15,7 @@ macos-window-buttons = hidden
 working-directory = home
 window-inherit-working-directory = false
 
+font-size = 13.4
 font-thicken=true
 font-thicken-strength=1
 font-feature = +dlig

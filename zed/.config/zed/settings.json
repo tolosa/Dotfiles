@@ -58,17 +58,6 @@
     "enable_feedback": false,
     "expand_terminal_card": false,
     "expand_edit_card": false,
-    "tool_permissions": {
-      "tools": {
-        "terminal": {
-          "always_allow": [
-            {
-              "pattern": "^node\\b"
-            }
-          ]
-        }
-      }
-    },
     "use_modifier_to_send": true,
     "message_editor_min_lines": 4,
     "thinking_display": "always_collapsed",
@@ -114,6 +103,7 @@
         "model": ["gpt-6-astra", "gpt-6.1-sol", "gpt-5.6-sol"]
       },
       "default_config_options": {
+        "model": "gpt-5.6-luna",
         "fast-mode": false,
         "reasoning_effort": "high"
       },
