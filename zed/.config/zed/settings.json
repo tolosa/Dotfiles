@@ -10,6 +10,7 @@
   "vertical_scroll_margin": 2.0,
   "scroll_beyond_last_line": "vertical_scroll_margin",
   "terminal": {
+    "font_weight": 300.0,
     "font_family": "JetBrainsMono Nerd Font"
   },
   "diff_view_style": "unified",
