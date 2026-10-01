@@ -28,6 +28,8 @@ alias cla='(){ cd -- "$@" && la; }'
 alias -g grp="| grep"
 # asdf
 alias asd="asdf"
+# zed
+alias zedd="zed ."
 # vscode
 alias codee="code ."
 # git
