@@ -1,8 +1,8 @@
 # ohmyzsh
 alias reload="source ~/.zshrc" #"omz reload"
-alias ezsh="code ~/.zshrc"
-alias ealias="code ~/Library/Mobile\ Documents/com\~apple\~CloudDocs/Dotfiles/ohmyzsh/aliases.zsh"
-alias econfig="code ~/Library/Mobile\ Documents/com\~apple\~CloudDocs/Dotfiles/ohmyzsh/config.zsh"
+alias edot="zed ~/Dotfiles"
+alias ezsh="zed ~/Dotfiles/zsh/dot-zshrc"
+alias ealias="zed ~/Dotfiles/zsh/dot-oh-my-zsh/custom/aliases.zsh"
 # ls
 alias l="eza -lF --icons --no-quotes --no-permissions --git --group-directories-first --time-style=relative --color-scale=age"
 alias la="l -a"
