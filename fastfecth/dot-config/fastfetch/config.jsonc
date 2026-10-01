@@ -13,7 +13,6 @@
   },
   "logo": {
     "type": "iterm",
-    //"source": "/Users/leo/Library/Mobile Documents/com~apple~CloudDocs/Dotfiles/fastfetch/logos/*.png",
     "height": 15,
     "width": 22,
     "preserveAspectRatio": true,
@@ -26,7 +25,7 @@
     "title",
     {
       "type": "separator",
-      "string": "–",
+      "string": "─",
       "times": 10,
       "outputColor": "yellow"
     },
@@ -61,7 +60,7 @@
     {
       "type": "datetime",
       "key": "Now",
-      "format": "{#blue}{hour}:{minute}{#} {weekday-short} {day-in-month} {month-name-short} {year}"
+      "format": "{#blue}{hour}:{minute-pretty} hs{#} {weekday-short} {day-in-month} {month-name-short} {year}"
     }
   ]
 }
