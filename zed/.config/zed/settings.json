@@ -8,7 +8,7 @@
 // command palette (cmd-shift-p / ctrl-shift-p)
 {
   "terminal": {
-    "font_weight": 300.0,
+    "show_count_badge": false,
     "font_family": "JetBrainsMono Nerd Font"
   },
   "diff_view_style": "unified",
@@ -37,6 +37,7 @@
     }
   },
   "project_panel": {
+    "diagnostic_badges": false,
     "bold_folder_labels": false,
     "indent_size": 10.0,
     "folder_indicator": "both",
@@ -103,7 +104,6 @@
         "model": ["gpt-6-astra", "gpt-6.1-sol", "gpt-5.6-sol"]
       },
       "default_config_options": {
-        "model": "gpt-5.6-luna",
         "fast-mode": false,
         "reasoning_effort": "high"
       },
