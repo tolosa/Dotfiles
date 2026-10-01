@@ -7,6 +7,9 @@
 // custom settings, run `zed: open default settings` from the
 // command palette (cmd-shift-p / ctrl-shift-p)
 {
+  "terminal": {
+    "font_family": "JetBrainsMono Nerd Font"
+  },
   "diff_view_style": "unified",
   "colorize_brackets": true,
   "collaboration_panel": {
@@ -46,6 +49,11 @@
   },
   "buffer_font_weight": 400.0,
   "agent": {
+    "inline_assistant_model": {
+      "provider": "openai-subscribed",
+      "model": "gpt-5.6-sol",
+      "enable_thinking": false
+    },
     "enable_feedback": false,
     "expand_terminal_card": false,
     "expand_edit_card": false,
