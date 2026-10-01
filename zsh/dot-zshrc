@@ -145,7 +145,7 @@ source "$HOMEBREW_PREFIX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.z
 
 # fastfetch
 # https://github.com/fastfetch-cli/fastfetch
-if [[ -o interactive ]]; then
+if [[ "$TERM_PROGRAM" == "ghostty" ]]; then
   background=$(readlink "$XDG_CONFIG_HOME/ghostty/background.png")
   if [[ -n "$background" ]]; then
     fastfetch --kitty "$XDG_CONFIG_HOME/fastfetch/logos/${background:t}"
