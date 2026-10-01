@@ -7,8 +7,9 @@
 // custom settings, run `zed: open default settings` from the
 // command palette (cmd-shift-p / ctrl-shift-p)
 {
+  "vertical_scroll_margin": 2.0,
+  "scroll_beyond_last_line": "vertical_scroll_margin",
   "terminal": {
-    "show_count_badge": false,
     "font_family": "JetBrainsMono Nerd Font"
   },
   "diff_view_style": "unified",
@@ -37,7 +38,6 @@
     }
   },
   "project_panel": {
-    "diagnostic_badges": false,
     "bold_folder_labels": false,
     "indent_size": 10.0,
     "folder_indicator": "both",
@@ -137,7 +137,8 @@
     "Catppuccin Mocha": {
       "border": "#11121B",
       "editor.background": "#1D1D2D",
-      "tab.inactive_background": "#11121B"
+      "tab.inactive_background": "#11121B",
+      "scrollbar.track.background": "#1D1D2D"
     }
   },
   "formatter": {
