@@ -22,8 +22,8 @@ alias latd1="lat1 --only-dirs"
 alias ltdz1="ltz1 --only-dirs"
 # cd
 alias c="cd"
-alias cl='(){ cd -- "$@" && l; }'
-alias cla='(){ cd -- "$@" && la; }'
+cl() { cd -- "$@" && l; }
+cla() { cd -- "$@" && la; }
 # grep
 alias -g grp="| grep"
 # asdf
