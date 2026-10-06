@@ -50,12 +50,12 @@
     {
       "type": "memory",
       "key": "Memory",
-      "format": "{percentage} {used} / {total}"
+      "format": "{percentage} {used} {#dim_}/ {total}{#}"
     },
     {
       "type": "disk",
       "key": "Disk", // "{name~0,9}",
-      "format": "{size-percentage} {size-used} / {size-total} {#magenta}{mountpoint}{#}"
+      "format": "{size-percentage} {size-used} {#dim_}/ {size-total}{#} {#magenta}{mountpoint}{#}"
     },
     {
       "type": "datetime",

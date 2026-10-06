@@ -13,7 +13,7 @@ zsh resources/logos/resize.zsh resources/logos/source \
 
 zsh resources/logos/resize.zsh resources/logos/source \
   --output ghostty/dot-config/ghostty/backgrounds \
-  --height 1100 \
+  --height 1000 \
   --margin-bottom 60 \
   --margin-right 60 \
   --overwrite
