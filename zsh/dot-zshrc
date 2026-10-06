@@ -148,7 +148,7 @@ source "$HOMEBREW_PREFIX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.z
 if [[ "$TERM_PROGRAM" == "ghostty" ]]; then
   background=$(readlink "$XDG_CONFIG_HOME/ghostty/background.png")
   if [[ -n "$background" ]]; then
-    fastfetch --kitty "$XDG_CONFIG_HOME/fastfetch/logos/${background:t}"
+    fastfetch --kitty-direct "$XDG_CONFIG_HOME/fastfetch/logos/${background:t}"
   fi
 
   (
