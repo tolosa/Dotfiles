@@ -10,6 +10,10 @@ export ZSH="$HOME/.oh-my-zsh"
 # See https://github.com/ohmyzsh/ohmyzsh/wiki/Themes
 # ZSH_THEME="robbyrussell"
 source "/opt/homebrew/opt/spaceship/spaceship.zsh" # required to load spaceship from brew instead of the builtin theme below
+
+# prevent spaceship waking up Docker Compose in standby
+spaceship remove docker
+spaceship remove docker_compose
 # ZSH_THEME="spaceship"
 
 # Set list of themes to pick from when loading at random
