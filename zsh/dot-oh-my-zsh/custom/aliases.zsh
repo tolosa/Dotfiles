@@ -24,6 +24,9 @@ alias ltdz1="ltz1 --only-dirs"
 alias c="cd"
 cl() { cd -- "$@" && l; }
 cla() { cd -- "$@" && la; }
+# z
+zl() { z "$@" && l; }
+zla() { z "$@" && la; }
 # mkdir
 mkcd() { mkdir -p -- "$1" && cd -- "$1"; }
 # grep
