@@ -7,10 +7,10 @@
           {
             "type": "command",
             "command": "biome check --write .",
-            "statusMessage": "Formatting/linting with Biome"
-          }
-        ]
-      }
-    ]
-  }
+            "statusMessage": "Formatting/linting with Biome",
+          },
+        ],
+      },
+    ],
+  },
 }
