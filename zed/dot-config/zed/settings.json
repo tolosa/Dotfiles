@@ -7,37 +7,38 @@
 // custom settings, run `zed: open default settings` from the
 // command palette (cmd-shift-p / ctrl-shift-p)
 {
+  "cli_default_open_behavior": "new_window",
   "vertical_scroll_margin": 2.0,
   "scroll_beyond_last_line": "vertical_scroll_margin",
   "terminal": {
     "font_weight": 300.0,
-    "font_family": "JetBrainsMono Nerd Font"
+    "font_family": "JetBrainsMono Nerd Font",
   },
   "diff_view_style": "unified",
   "colorize_brackets": true,
   "collaboration_panel": {
-    "button": false
+    "button": false,
   },
   "git_panel": {
     "group_by": "none",
     "tree_view": true,
-    "file_icons": true
+    "file_icons": true,
   },
   "tabs": {
-    "file_icons": true
+    "file_icons": true,
   },
   "title_bar": {
-    "show_branch_status_icon": true
+    "show_branch_status_icon": true,
   },
   "preview_tabs": {
-    "enabled": true
+    "enabled": true,
   },
   "document_folding_ranges": "on",
   "git": {
     "inline_blame": {
       "enabled": false,
-      "location": "status_bar"
-    }
+      "location": "status_bar",
+    },
   },
   "project_panel": {
     "bold_folder_labels": false,
@@ -45,18 +46,18 @@
     "folder_indicator": "both",
     "entry_spacing": "comfortable",
     "hide_root": true,
-    "dock": "left"
+    "dock": "left",
   },
   "selection_highlight": false,
   "buffer_line_height": {
-    "custom": 1.4
+    "custom": 1.4,
   },
   "buffer_font_weight": 400.0,
   "agent": {
     "inline_assistant_model": {
       "provider": "openai-subscribed",
       "model": "gpt-5.6-sol",
-      "enable_thinking": false
+      "enable_thinking": false,
     },
     "enable_feedback": false,
     "expand_terminal_card": false,
@@ -65,67 +66,67 @@
     "message_editor_min_lines": 4,
     "thinking_display": "always_collapsed",
     "sandbox_permissions": {
-      "allow_unsandboxed": true
+      "allow_unsandboxed": true,
     },
     "dock": "right",
     "default_model": {
       "provider": "openai-subscribed",
       "model": "gpt-6-astra",
       "enable_thinking": true,
-      "effort": "high"
+      "effort": "high",
     },
     "threads_sidebar": {
-      "position": "right"
+      "position": "right",
     },
     "favorite_models": [
       {
         "provider": "openai-subscribed",
         "model": "gpt-6-astra",
         "enable_thinking": true,
-        "effort": "high"
+        "effort": "high",
       },
       {
         "provider": "openai-subscribed",
         "model": "gpt-6.1-sol",
         "enable_thinking": true,
-        "effort": "low"
+        "effort": "low",
       },
       {
         "provider": "openai-subscribed",
         "model": "gpt-5.6-sol",
         "enable_thinking": true,
-        "effort": "low"
-      }
+        "effort": "low",
+      },
     ],
-    "model_parameters": []
+    "model_parameters": [],
   },
   "when_closing_with_no_tabs": "keep_window_open",
   "agent_servers": {
     "codex-acp": {
       "favorite_config_option_values": {
-        "model": ["gpt-6-astra", "gpt-6.1-sol", "gpt-5.6-sol"]
+        "model": ["gpt-6-astra", "gpt-6.1-sol", "gpt-5.6-sol"],
       },
       "default_config_options": {
-        "model": "gpt-6-astra",
+        "model": "gpt-6.1-sol",
         "fast-mode": false,
-        "reasoning_effort": "high"
+        "reasoning_effort": "high",
       },
-      "type": "registry"
-    }
+      "type": "registry",
+    },
   },
   "session": {
-    "trust_all_worktrees": true
+    "trust_all_worktrees": true,
   },
   "telemetry": {
     "diagnostics": false,
-    "metrics": false
+    "metrics": false,
   },
   "minimap": {
     "show": "always",
-    "thumb": "always"
+    "thumb": "always",
   },
   "file_types": {
-    "shellscript": ["dot-zshrc"]
+    "shellscript": ["dot-zshrc"],
   },
   "auto_indent_on_paste": true,
   "semantic_tokens": "combined",
@@ -141,24 +142,40 @@
       "border": "#11121B",
       "editor.background": "#1D1D2D",
       "tab.inactive_background": "#11121B",
-      "scrollbar.track.background": "#1D1D2D"
-    }
+      "scrollbar.track.background": "#1D1D2D",
+    },
   },
   "formatter": {
     "language_server": {
-      "name": "biome"
-    }
+      "name": "biome",
+    },
   },
   // "language_servers": ["!eslint", "..."],
   "languages": {
     "JavaScript": {
-      "language_servers": ["!eslint", "..."]
+      "language_servers": ["!eslint", "..."],
     },
     "TypeScript": {
-      "language_servers": ["!eslint", "..."]
+      "language_servers": ["!eslint", "..."],
     },
     "TSX": {
-      "language_servers": ["!eslint", "..."]
-    }
-  }
+      "language_servers": ["!eslint", "..."],
+    },
+    "JSON": {
+      "language_servers": ["biome"],
+      "formatter": {
+        "language_server": {
+          "name": "biome",
+        },
+      },
+    },
+    "JSONC": {
+      "language_servers": ["biome"],
+      "formatter": {
+        "language_server": {
+          "name": "biome",
+        },
+      },
+    },
+  },
 }

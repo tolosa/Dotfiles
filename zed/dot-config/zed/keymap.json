@@ -10,55 +10,55 @@
     "context": "Workspace",
     "bindings": {
       // "shift shift": "file_finder::Toggle"
-    }
+    },
   },
   {
     "context": "Editor && vim_mode == insert",
     "bindings": {
       // "j k": "vim::NormalBefore"
-    }
+    },
   },
   {
     "unbind": {
       "ctrl-g": "go_to_line::Toggle",
-      "ctrl-shift-g": "git_panel::ToggleFocus"
-    }
+      "ctrl-shift-g": "git_panel::ToggleFocus",
+    },
   },
   {
     "bindings": {
-      "ctrl-g": "git_panel::ToggleFocus"
-    }
+      "ctrl-g": "git_panel::ToggleFocus",
+    },
   },
   {
     "unbind": {
-      "cmd-?": "agent::ToggleFocus"
-    }
+      "cmd-?": "agent::ToggleFocus",
+    },
   },
   {
     "bindings": {
-      "ctrl-a": "agent::ToggleFocus"
-    }
+      "ctrl-a": "agent::ToggleFocus",
+    },
   },
   {
     "bindings": {
-      "ctrl-tab": "workspace::ToggleZoom"
-    }
+      "ctrl-tab": "workspace::ToggleZoom",
+    },
   },
   {
     "unbind": {
-      "shift-escape": "workspace::ToggleZoom"
-    }
+      "shift-escape": "workspace::ToggleZoom",
+    },
   },
   {
     "context": "Workspace",
     "bindings": {
-      "ctrl-c": "multi_workspace::ToggleWorkspaceSidebar"
-    }
+      "ctrl-c": "multi_workspace::ToggleWorkspaceSidebar",
+    },
   },
   {
     "context": "Workspace",
     "unbind": {
-      "alt-cmd-j": "multi_workspace::ToggleWorkspaceSidebar"
-    }
-  }
+      "alt-cmd-j": "multi_workspace::ToggleWorkspaceSidebar",
+    },
+  },
 ]
