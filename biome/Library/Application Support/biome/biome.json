@@ -7,12 +7,18 @@
   },
   "vcs": {
     "enabled": true,
-    "clientKind": "git",
-    "useIgnoreFile": true
+    "clientKind": "git"
   },
   "json": {
     "parser": {
-      "allowComments": true
+      "allowComments": true,
+      "allowTrailingCommas": true
+    },
+    "formatter": {
+      "trailingCommas": "all"
     }
+  },
+  "files": {
+    "includes": ["**", "!!**/build", "!!**/dist", "!!**/.next"]
   }
 }
